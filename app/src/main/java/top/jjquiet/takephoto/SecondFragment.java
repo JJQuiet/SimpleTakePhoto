@@ -36,12 +36,6 @@ public class SecondFragment extends Fragment {
             Bundle savedInstanceState
     ) {
         binding = FragmentSecondBinding.inflate(inflater, container, false);
-        recyclerView = binding.recyclerView;
-        photoList = loadPhotoUris();
-        Log.d("蒋建琪", "onCreateView photoSize: " + photoList.size());
-        photoAdapter = new PhotoAdapter(photoList);
-        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-        recyclerView.setAdapter(photoAdapter);
         return binding.getRoot();
     }
     public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
@@ -51,6 +45,11 @@ public class SecondFragment extends Fragment {
 //            Uri imageUri = Uri.parse(getArguments().getString("photoUri"));
 //            imageView.setImageURI(imageUri); // Set the ImageView to display the image
 //        }
+        recyclerView = binding.recyclerView;
+        photoList = loadPhotoUris();
+        photoAdapter = new PhotoAdapter(photoList);
+        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        recyclerView.setAdapter(photoAdapter);
         binding.buttonSecond.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -73,13 +72,11 @@ public class SecondFragment extends Fragment {
         @Override
         public void onBindViewHolder(@NonNull PhotoViewHolder holder, int position) {
             Uri photoUri = photoList.get(position);
-            Log.d("蒋建琪", "onBindViewHolder photoUri: " + photoUri.toString());
-//            holder.imageView.setImageURI(photoUri);
+            holder.imageView.setImageURI(photoUri);
             // 使用Glide来加载图片
-            Glide.with(holder.imageView.getContext())
-                    .load(photoUri)
-                    .into(holder.imageView);
-            Log.d("蒋建琪", "onBindViewHolder: " + photoUri.toString());
+//            Glide.with(holder.imageView.getContext())
+//                    .load(photoUri)
+//                    .into(holder.imageView);
         }
         @Override
         public int getItemCount() {

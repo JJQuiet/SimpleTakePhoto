@@ -63,7 +63,6 @@ public class MainActivity extends AppCompatActivity {
                     Bundle bundle = new Bundle();
                     bundle.putString("photoUri", photoURI.toString());
                     savePhotoUri(photoURI);
-                    Log.d("蒋建琪", "onActivityResult: " + photoURI.toString());
 //                    SecondFragment secondFragment = new SecondFragment();
 //                    secondFragment.setArguments(bundle);
                     if(navController.getCurrentDestination().getId() == R.id.FirstFragment){
@@ -81,8 +80,8 @@ public class MainActivity extends AppCompatActivity {
                     requestPermissions(new String[]{Manifest.permission.CAMERA}, REQUEST_CAMERA_PERMISSION);
                 } else {
                     // Permission has already been granted
-                    openCamera();
                 }
+                openCamera();
             }
         });
     }
