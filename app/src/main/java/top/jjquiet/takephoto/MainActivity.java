@@ -4,12 +4,18 @@ import android.app.Activity;
 import android.app.Dialog;
 import android.content.ContentValues;
 import android.content.Context;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -20,6 +26,8 @@ import androidx.activity.result.ActivityResult;
 import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 import androidx.appcompat.app.AppCompatActivity;
 import android.view.View;
@@ -28,6 +36,8 @@ import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
 import okhttp3.*;
+import org.json.JSONException;
+import org.json.JSONObject;
 import top.jjquiet.takephoto.databinding.ActivityMainBinding;
 import top.jjquiet.takephoto.databinding.DialogLayoutBinding;
 
@@ -56,9 +66,11 @@ public class MainActivity extends AppCompatActivity {
     private static final int REQUEST_CAMERA_PERMISSION = 101;
     private static final int REQUEST_IMAGE_CAPTURE = 102;
     private static final int REQUEST_READ_EXTERNAL_STORAGE_PERMISSION = 103;
+    private static final int REQUEST_LOCATION_PERMISSION = 1001;
     private Uri photoURI;
     private ActivityResultLauncher<Uri> takePictureLauncher;
     private Dialog dialog;
+    private WebSocket webSocket;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,6 +81,12 @@ public class MainActivity extends AppCompatActivity {
         if (checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(new String[]{Manifest.permission.CAMERA}, REQUEST_CAMERA_PERMISSION);
         }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    REQUEST_LOCATION_PERMISSION);
+        }
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         dialog = new Dialog(this);
         dialogBinding = DialogLayoutBinding.inflate(getLayoutInflater());
@@ -78,7 +96,45 @@ public class MainActivity extends AppCompatActivity {
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
         appBarConfiguration = new AppBarConfiguration.Builder(navController.getGraph()).build();
         NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
-        // 初始化ActivityResultLauncher
+
+        setupWebSocket();
+        LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 4000, 3, new LocationListener() {
+            @Override
+            public void onLocationChanged(Location location) {
+                double latitude = location.getLatitude();
+                double longitude = location.getLongitude();
+                // 在这里更新 UI 或处理位置信息
+//                Log.d("经纬度：", "latitude:"+latitude + "," + "longitude:" + longitude);
+                // 发送位置信息到服务器
+                JSONObject locationJson = new JSONObject();
+                try {
+                    locationJson.put("CameraName", "单兵1");
+//                    locationJson.put("LAT_VAL", latitude);
+                    locationJson.put("LAT_VAL", String.valueOf(latitude));
+                    locationJson.put("LNG_VAL", String.valueOf(longitude));
+//                    locationJson.put("LNG_VAL", longitude);
+                    webSocket.send(locationJson.toString());
+                    Log.d("JSON解析成功", "经纬度：latitude:"+latitude + "," + "longitude:" + longitude);
+                } catch (JSONException e) {
+                    Log.d("JSON", "JSON解析失败");
+                    e.printStackTrace();
+                }
+            }
+
+            @Override
+            public void onStatusChanged(String provider, int status, Bundle extras) {
+            }
+
+            @Override
+            public void onProviderEnabled(String provider) {
+            }
+
+            @Override
+            public void onProviderDisabled(String provider) {
+            }
+        });
+
         takePictureLauncher = registerForActivityResult(new ActivityResultContracts.TakePicture(), new ActivityResultCallback<Boolean>() {
             @Override
             public void onActivityResult(Boolean result) {
@@ -252,6 +308,33 @@ public class MainActivity extends AppCompatActivity {
             fileName = file.getName();
         }
         return fileName;
+    }
+    private void setupWebSocket() {
+        OkHttpClient client = new OkHttpClient();
+        Request request = new Request.Builder().url("ws://192.168.0.144:8080/ws").build();
+        WebSocketListener webSocketListener = new WebSocketListener() {
+            @Override
+            public void onOpen(WebSocket webSocket, Response response) {
+                // WebSocket连接成功
+                Log.d("WebSocket", "WebSocket连接成功");
+            }
+            @Override
+            public void onMessage(WebSocket webSocket, String text) {
+                // 收到服务器消息
+                Log.d("WebSocket", "收到消息：" + text);
+            }
+            @Override
+            public void onFailure(WebSocket webSocket, Throwable t, Response response) {
+                Log.e("WebSocket", "Error during WebSocket connection", t);
+                if (response != null) {
+                    Log.e("WebSocket", "Response: " + response.toString());
+                }
+            }
+
+            // ...其他回调方法...
+        };
+        webSocket = client.newWebSocket(request, webSocketListener);
+
     }
 
 }
