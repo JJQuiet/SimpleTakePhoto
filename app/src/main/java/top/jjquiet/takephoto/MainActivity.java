@@ -1,6 +1,7 @@
 package top.jjquiet.takephoto;
 
 import android.app.Activity;
+import android.app.Dialog;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
@@ -28,6 +29,7 @@ import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
 import okhttp3.*;
 import top.jjquiet.takephoto.databinding.ActivityMainBinding;
+import top.jjquiet.takephoto.databinding.DialogLayoutBinding;
 
 import android.view.Menu;
 import android.view.MenuItem;
@@ -44,16 +46,20 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
 //import services.NetworkClient;
-
+import android.app.Dialog;
+import android.content.ContentValues;
 public class MainActivity extends AppCompatActivity {
 
     private AppBarConfiguration appBarConfiguration;
     private ActivityMainBinding binding;
+    private DialogLayoutBinding dialogBinding;
     private static final int REQUEST_CAMERA_PERMISSION = 101;
     private static final int REQUEST_IMAGE_CAPTURE = 102;
     private static final int REQUEST_READ_EXTERNAL_STORAGE_PERMISSION = 103;
     private Uri photoURI;
     private ActivityResultLauncher<Uri> takePictureLauncher;
+    private Dialog dialog;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -64,13 +70,14 @@ public class MainActivity extends AppCompatActivity {
             requestPermissions(new String[]{Manifest.permission.CAMERA}, REQUEST_CAMERA_PERMISSION);
         }
         binding = ActivityMainBinding.inflate(getLayoutInflater());
+        dialog = new Dialog(this);
+        dialogBinding = DialogLayoutBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
         setSupportActionBar(binding.toolbar);
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
         appBarConfiguration = new AppBarConfiguration.Builder(navController.getGraph()).build();
         NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
-
         // 初始化ActivityResultLauncher
         takePictureLauncher = registerForActivityResult(new ActivityResultContracts.TakePicture(), new ActivityResultCallback<Boolean>() {
             @Override
@@ -80,8 +87,11 @@ public class MainActivity extends AppCompatActivity {
                         navController.navigate(R.id.action_FirstFragment_to_SecondFragment);
                     }
                     savePhotoUri(photoURI);
-                    File uploadFile = new File(getRealPathFromURI(photoURI));
-                    uploadImage(uploadFile); // 调用上传图片的方法
+//                    uploadImage(); // 调用上传图片的方法
+                    // 上传图片
+                    dialogBinding.photoView.setImageURI(photoURI);
+                    dialog.setContentView(dialogBinding.getRoot());
+                    dialog.show();
                 } else {
                     // 用户取消或拍摄失败
                     Log.d("蒋建琪取消","用户取消拍摄");
@@ -97,6 +107,21 @@ public class MainActivity extends AppCompatActivity {
                     // Permission has already been granted
                 }
                 openCamera();
+            }
+        });
+        dialogBinding.buttonUpload.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String description = dialogBinding.editTextDescription.getText().toString();
+                uploadImage(description);
+                // 这里添加上传图片和描述的逻辑
+                dialog.dismiss();
+            }
+        });
+        dialogBinding.buttonCancel.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                dialog.dismiss();
             }
         });
     }
@@ -148,7 +173,7 @@ public class MainActivity extends AppCompatActivity {
         editor.putStringSet("photoUris", photoUriSet);
         editor.apply();
     }
-    private void uploadImage(File imageFile) {
+    private void uploadImage(String description) {
         try {
             InputStream inputStream = getContentResolver().openInputStream(photoURI);
             Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
@@ -156,16 +181,21 @@ public class MainActivity extends AppCompatActivity {
             ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
             bitmap.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream);
             byte[] byteArray = byteArrayOutputStream.toByteArray();
-
+            String uploaderName = "单兵1";
             // 创建一个不检查证书的 请求
             OkHttpClient client = NetworkClient.getUnsafeOkHttpClient();
-            RequestBody requestBody = new MultipartBody.Builder()
-                    .setType(MultipartBody.FORM)
-                    .addFormDataPart("file", getFileNameFromUri(photoURI),
-                            RequestBody.create(MediaType.parse("image/jpeg"), byteArray))
+            MultipartBody.Builder builder = new MultipartBody.Builder();
+            builder.setType(MultipartBody.FORM);
+            builder.addFormDataPart("file", getFileNameFromUri(photoURI),
+                    RequestBody.create(MediaType.parse("image/jpeg"), byteArray));
+            builder.addFormDataPart("uploader_name", uploaderName);
+            builder.addFormDataPart("photo_description", description);
+            RequestBody requestBody = builder
                     .build();
             Request request = new Request.Builder()
-                    .url("https://192.168.0.128:8443/upload") // 修改为自己的服务器地址
+                    // ToDo
+//                    .url("http://192.168.0.113:8080/uploadPhoto") // 修改为自己的服务器地址
+                    .url("http://192.168.43.3:8080/uploadPhoto")
                     .post(requestBody)
                     .build();
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -173,7 +203,6 @@ public class MainActivity extends AppCompatActivity {
                     requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, REQUEST_READ_EXTERNAL_STORAGE_PERMISSION);
                 }
             }
-
             // 异步请求，避免阻塞主线程
             client.newCall(request).enqueue(new Callback() {
                 @Override
@@ -193,14 +222,6 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
     }
-    // 一个辅助方法，用于从 Uri 获取实际文件路径
-//    private String getRealPathFromURI(Uri contentUri) {
-//        String[] proj = { MediaStore.Images.Media.DATA };
-//        Cursor cursor = managedQuery(contentUri, proj, null, null, null);
-//        int column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
-//        cursor.moveToFirst();
-//        return cursor.getString(column_index);
-//    }
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -232,8 +253,5 @@ public class MainActivity extends AppCompatActivity {
         }
         return fileName;
     }
-
-
-
 
 }

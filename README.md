@@ -1,0 +1,1 @@
+- 修改MainActivity.java中的uploadImage()方法，将其中的uploadUrl修改为自己的服务器地址
