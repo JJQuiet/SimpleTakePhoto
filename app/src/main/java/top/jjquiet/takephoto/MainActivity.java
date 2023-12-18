@@ -99,7 +99,7 @@ public class MainActivity extends AppCompatActivity {
 
         setupWebSocket();
         LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 4000, 3, new LocationListener() {
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 60000, 50, new LocationListener() {
             @Override
             public void onLocationChanged(Location location) {
                 double latitude = location.getLatitude();
@@ -251,7 +251,7 @@ public class MainActivity extends AppCompatActivity {
             Request request = new Request.Builder()
                     // ToDo
 //                    .url("http://192.168.0.113:8080/uploadPhoto") // 修改为自己的服务器地址
-                    .url("http://192.168.43.3:8080/uploadPhoto")
+                    .url("http://192.168.0.158:8080/uploadPhoto")
                     .post(requestBody)
                     .build();
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -311,7 +311,7 @@ public class MainActivity extends AppCompatActivity {
     }
     private void setupWebSocket() {
         OkHttpClient client = new OkHttpClient();
-        Request request = new Request.Builder().url("ws://192.168.0.144:8080/ws").build();
+        Request request = new Request.Builder().url("ws://192.168.0.158:8080/ws").build();
         WebSocketListener webSocketListener = new WebSocketListener() {
             @Override
             public void onOpen(WebSocket webSocket, Response response) {
