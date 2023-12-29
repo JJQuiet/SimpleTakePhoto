@@ -8,21 +8,18 @@
         android:fitsSystemWindows="true"
         tools:context=".MainActivity">
 
+
     <com.google.android.material.appbar.AppBarLayout
             android:layout_height="wrap_content"
             android:layout_width="match_parent"
             android:fitsSystemWindows="true"
     >
-
         <com.google.android.material.appbar.MaterialToolbar
                 android:id="@+id/toolbar"
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize"/>
-
     </com.google.android.material.appbar.AppBarLayout>
-
     <include layout="@layout/content_main"/>
-
     <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fab"
             android:layout_width="wrap_content"
@@ -32,5 +29,40 @@
             android:layout_marginBottom="16dp"
             android:contentDescription="@string/take_a_photo"
             app:srcCompat="@android:drawable/ic_menu_camera"/>
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_record"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_marginEnd="86dp"
+            android:layout_marginBottom="16dp"
+            android:contentDescription="@string/take_a_video"
+            app:srcCompat="@android:drawable/ic_menu_add"/>
+    <FrameLayout
+            android:id="@+id/surface_container"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone"> <!-- 初始设为不可见 -->
+        <SurfaceView
+                android:id="@+id/surfaceView"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"/>
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/btnPlayPause"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="16dp"
+                android:contentDescription="@string/take_a_video"
+                app:srcCompat="@android:drawable/ic_media_play"/>
+        <TextView
+                android:id="@+id/timerTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="top|center_horizontal"
+                android:background="@color/cardview_light_background"
+                android:text="00:00" />
+
+    </FrameLayout>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

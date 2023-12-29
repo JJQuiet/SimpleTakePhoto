@@ -2,5 +2,7 @@
 <paths  xmlns:android="http://schemas.android.com/apk/res/android">
 <!--    <external-path name="my_images" path="Android/data/top.jjquiet.takephoto/files/Pictures" />-->
     <external-path name="my_images" path="Pictures/top.jjquiet.takephoto" />
+<!--    <external-path name="my_videos" path="DCIM/Camera" />-->
+    <external-path name="my_videos" path="Movies/SimpleTakePhoto" />
 </paths>
 
